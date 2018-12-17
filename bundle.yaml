@@ -1,20 +1,20 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: prometheus-operator
+  name: prometheus-application-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: prometheus-operator
+  name: prometheus-application-operator
 subjects:
 - kind: ServiceAccount
-  name: prometheus-operator
+  name: prometheus-application-operator
   namespace: application-monitoring
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: prometheus-operator
+  name: prometheus-application-operator
 rules:
 - apiGroups:
   - apiextensions.k8s.io
@@ -82,18 +82,18 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   labels:
-    k8s-app: prometheus-operator
-  name: prometheus-operator
+    k8s-app: prometheus-application-operator
+  name: prometheus-application-operator
   namespace: application-monitoring
 spec:
   replicas: 1
   selector:
     matchLabels:
-      k8s-app: prometheus-operator
+      k8s-app: prometheus-application-operator
   template:
     metadata:
       labels:
-        k8s-app: prometheus-operator
+        k8s-app: prometheus-application-operator
     spec:
       containers:
       - args:
@@ -101,8 +101,9 @@ spec:
         - --logtostderr=true
         - --config-reloader-image=quay.io/coreos/configmap-reload:v0.0.1
         - --prometheus-config-reloader=quay.io/coreos/prometheus-config-reloader:v0.26.0
+        - --namespaces=application-monitoring
         image: quay.io/coreos/prometheus-operator:v0.26.0
-        name: prometheus-operator
+        name: prometheus-application-operator
         ports:
         - containerPort: 8080
           name: http
@@ -118,13 +119,11 @@ spec:
           readOnlyRootFilesystem: true
       nodeSelector:
         beta.kubernetes.io/os: linux
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-      serviceAccountName: prometheus-operator
+      securityContext: {}
+      serviceAccountName: prometheus-application-operator
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: prometheus-operator
+  name: prometheus-application-operator
   namespace: application-monitoring

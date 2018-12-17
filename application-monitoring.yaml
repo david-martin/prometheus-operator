@@ -1,0 +1,151 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: application-monitoring
+spec:
+  serviceAccountName: prometheus-application-monitoring
+  serviceMonitorSelector:
+    matchLabels:
+      application-monitoring: "true"
+  resources:
+    requests:
+      memory: 400Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-application-monitoring
+  labels:
+    application-monitoring: "true"
+spec:
+  type: NodePort
+  ports:
+  - name: web
+    nodePort: 30900
+    port: 9090
+    protocol: TCP
+    targetPort: web
+  selector:
+    app: prometheus
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-application-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: prometheus-application-monitoring
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-application-monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-application-monitoring
+subjects:
+- kind: ServiceAccount
+  name: prometheus-application-monitoring
+  namespace: application-monitoring
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: application-monitoring
+  labels:
+    application-monitoring: "true"
+spec:
+  selector:
+    matchLabels:
+      application-monitoring: "true"
+  endpoints:
+  - port: web
+---
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRole
+metadata:
+  name: alertmanager-application-monitoring
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  attributeRestrictions: null
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  attributeRestrictions: null
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: authorization.openshift.io/v1
+groupNames: null
+kind: ClusterRoleBinding
+metadata:
+  name: alertmanager-application-monitoring
+roleRef:
+  name: alertmanager-application-monitoring
+subjects:
+- kind: ServiceAccount
+  name: alertmanager-application-monitoring
+  namespace: application-monitoring
+userNames:
+- system:serviceaccount:application-monitoring:alertmanager-application-monitoring
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alertmanager-application-monitoring
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: application-monitoring
+spec:
+  listenLocal: false
+  serviceAccountName: alertmanager-application-monitoring
+---
+apiVersion: v1
+data:
+  alertmanager.yaml: >-
+    Z2xvYmFsOgogIHJlc29sdmVfdGltZW91dDogNW0Kcm91dGU6CiAgZ3JvdXBfd2FpdDogMzBzCiAgZ3JvdXBfaW50ZXJ2YWw6IDVtCiAgcmVwZWF0X2ludGVydmFsOiAxMmgKICByZWNlaXZlcjogZGVmYXVsdAogIHJvdXRlczoKICAtIG1hdGNoOgogICAgICBhbGVydG5hbWU6IERlYWRNYW5zU3dpdGNoCiAgICByZXBlYXRfaW50ZXJ2YWw6IDVtCiAgICByZWNlaXZlcjogZGVhZG1hbnNzd2l0Y2gKcmVjZWl2ZXJzOgotIG5hbWU6IGRlZmF1bHQKLSBuYW1lOiBkZWFkbWFuc3N3aXRjaAo=
+kind: Secret
+metadata:
+  name: alertmanager-application-monitoring
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-application-monitoring
+spec:
+  ports:
+    - name: web
+      port: 6783
+      protocol: TCP
+      targetPort: web
+  selector:
+    alertmanager: application-monitoring
+    app: alertmanager
+  sessionAffinity: None
+  type: ClusterIP
