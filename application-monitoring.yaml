@@ -5,6 +5,11 @@ metadata:
   labels:
     prometheus: application-monitoring
 spec:
+  alerting:
+    alertmanagers:
+      - name: alertmanager-application-monitoring
+        namespace: application-monitoring
+        port: web
   resources:
     requests:
       memory: 400Mi
