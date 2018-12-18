@@ -2,6 +2,8 @@ apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
   name: application-monitoring
+  labels:
+    prometheus: application-monitoring
 spec:
   resources:
     requests:
@@ -11,6 +13,13 @@ spec:
     matchLabels:
       application-monitoring: 'true'
   serviceMonitorSelector:
+    matchLabels:
+      application-monitoring: 'true'
+  ruleSelector:
+    matchLabels:
+      prometheus: application-monitoring
+      role: alert-rules
+  ruleNamespaceSelector:
     matchLabels:
       application-monitoring: 'true'
 ---
@@ -166,3 +175,24 @@ spec:
   selector:
     matchLabels:
       application-monitoring: 'true'
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    prometheus: application-monitoring
+    role: alert-rules
+  name: prometheus-application-monitoring-rules
+spec:
+  groups:
+    - name: general.rules
+      rules:
+        - alert: DeadMansSwitch
+          annotations:
+            description: >-
+              This is a DeadMansSwitch meant to ensure that the entire Alerting
+              pipeline is functional.
+            summary: Alerting DeadMansSwitch
+          expr: vector(1)
+          labels:
+            severity: none

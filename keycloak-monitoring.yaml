@@ -14,3 +14,24 @@ spec:
   selector:
     matchLabels:
       application: sso
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    prometheus: application-monitoring
+    role: alert-rules
+  name: application-monitoring
+spec:
+  groups:
+    - name: general.rules
+      rules:
+        - alert: KeycloakDeadMansSwitch
+          annotations:
+            description: >-
+              This is a KeycloakDeadMansSwitch meant to ensure that the entire Alerting
+              pipeline is functional.
+            summary: Alerting KeycloakDeadMansSwitch
+          expr: vector(1)
+          labels:
+            severity: none
