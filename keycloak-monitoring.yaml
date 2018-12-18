@@ -26,12 +26,17 @@ spec:
   groups:
     - name: general.rules
       rules:
-        - alert: KeycloakDeadMansSwitch
+        - alert: KeycloakJavaHeapThresholdExceeded
           annotations:
-            description: >-
-              This is a KeycloakDeadMansSwitch meant to ensure that the entire Alerting
-              pipeline is functional.
-            summary: Alerting KeycloakDeadMansSwitch
-          expr: vector(1)
+            message: >-
+              {{ printf "%0.0f" $value }}% usage of {{ $labels.area }} in
+              pod {{ $labels.pod }}, 
+              namespace {{ $labels.namespace }}.
+          expr: >
+            100 *
+            jvm_memory_bytes_used{area="heap"}
+              / jvm_memory_bytes_max{area="heap"}
+              > 10
+          for: 1m
           labels:
-            severity: none
+            severity: warning
