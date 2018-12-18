@@ -3,13 +3,16 @@ kind: Prometheus
 metadata:
   name: application-monitoring
 spec:
-  serviceAccountName: prometheus-application-monitoring
-  serviceMonitorSelector:
-    matchLabels:
-      application-monitoring: "true"
   resources:
     requests:
       memory: 400Mi
+  serviceAccountName: prometheus-application-monitoring
+  serviceMonitorNamespaceSelector:
+    matchLabels:
+      application-monitoring: 'true'
+  serviceMonitorSelector:
+    matchLabels:
+      application-monitoring: 'true'
 ---
 apiVersion: v1
 kind: Service
@@ -68,15 +71,15 @@ subjects:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: application-monitoring
   labels:
-    application-monitoring: "true"
+    application-monitoring: 'true'
+  name: application-monitoring
 spec:
+  endpoints:
+    - port: web
   selector:
     matchLabels:
-      application-monitoring: "true"
-  endpoints:
-  - port: web
+      application-monitoring: 'true'
 ---
 apiVersion: authorization.openshift.io/v1
 kind: ClusterRole
@@ -149,3 +152,17 @@ spec:
     app: alertmanager
   sessionAffinity: None
   type: ClusterIP
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    application-monitoring: 'true'
+  name: grafana
+spec:
+  endpoints:
+    - port: grafana
+      scheme: https
+  selector:
+    matchLabels:
+      application-monitoring: 'true'

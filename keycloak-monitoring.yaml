@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    application-monitoring: 'true'
+  name: application-monitoring
+spec:
+  endpoints:
+    - path: /auth/realms/master/metrics
+      port: sso
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+  selector:
+    matchLabels:
+      application: sso
