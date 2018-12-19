@@ -40,6 +40,17 @@ spec:
           for: 1m
           labels:
             severity: warning
+        - alert: KeycloakLoginFailedThresholdExceeded
+          annotations:
+            message: >-
+              More than 5 failed login attempts for realm {{ $labels.realm }},
+              provider {{ $labels.provider }}, namespace {{ $labels.namespace }}
+              over the last 5 minutes. (Rate of {{ printf "%0f" $value }})
+          expr: >
+            rate(keycloak_failed_login_attempts{namespace="rhsso",realm="master"}[5m]) * 300 > 5
+          for: 1m
+          labels:
+            severity: warning
 ---
 apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDashboard
